@@ -10,7 +10,9 @@ permissions:
 
 jobs:
   publish:
-    runs-on: ubuntu-latest
+    # EastMoney rejects the Ubuntu-hosted runner's egress path in some
+    # regions; the Windows runner uses a different public egress route.
+    runs-on: windows-latest
     timeout-minutes: 15
     steps:
       - name: Check out repository
@@ -28,10 +30,11 @@ jobs:
         env:
           TZ: Asia/Shanghai
         run: |
-          trade_date="$(date +%F)"
+          trade_date="$(python -c "from datetime import datetime; from zoneinfo import ZoneInfo; print(datetime.now(ZoneInfo('Asia/Shanghai')).date())")"
           python tools/export_theme_snapshot.py \
             --output public-data/themes/latest.json \
             --trade-date "$trade_date"
+        shell: bash
 
       - name: Commit changed snapshot
         run: |
