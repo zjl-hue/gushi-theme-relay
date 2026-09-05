@@ -11,8 +11,23 @@ except ImportError:  # pragma: no cover - exercised by the CLI configuration che
     curl_requests = None
 
 
-CATALOG_HOSTS = ("82.push2.eastmoney.com", "push2.eastmoney.com")
-MEMBER_HOSTS = ("29.push2.eastmoney.com", "push2.eastmoney.com")
+# EastMoney rotates the numbered push2 front doors.  The first two entries
+# preserve the original route; the additional numbered hosts are useful from
+# CI runners whose egress IPs receive a 502/connection reset on those routes.
+CATALOG_HOSTS = (
+    "82.push2.eastmoney.com",
+    "push2.eastmoney.com",
+    "17.push2.eastmoney.com",
+    "79.push2.eastmoney.com",
+    "73.push2.eastmoney.com",
+)
+MEMBER_HOSTS = (
+    "29.push2.eastmoney.com",
+    "push2.eastmoney.com",
+    "17.push2.eastmoney.com",
+    "79.push2.eastmoney.com",
+    "73.push2.eastmoney.com",
+)
 API_PATH = "/api/qt/clist/get"
 UT = "bd1d9ddb04089700cf9c27f6f7426281"
 HEADERS = {
