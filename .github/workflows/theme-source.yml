@@ -24,7 +24,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install fetch dependency
-        run: python -m pip install --disable-pip-version-check -q curl_cffi
+        run: python -m pip install --disable-pip-version-check -q curl_cffi tzdata
 
       - name: Fetch and validate snapshot
         env:
