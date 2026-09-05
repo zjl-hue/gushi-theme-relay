@@ -2,6 +2,10 @@
 from __future__ import annotations
 
 import re
+import json
+import urllib.error
+import urllib.parse
+import urllib.request
 from collections.abc import Iterable
 from typing import Any
 
@@ -141,6 +145,27 @@ class EastMoneyClient:
                     return payload
                 except Exception as exc:  # noqa: BLE001 - provider fallback boundary
                     last_error = exc
+            # Some CI egress paths reset curl-cffi's browser-fingerprint
+            # connection even though the same public endpoint is reachable
+            # with a plain stdlib HTTPS request.  Keep this fallback dependency
+            # free so the relay workflow can still run when curl-cffi is
+            # blocked by an intermediary.
+            try:
+                query = urllib.parse.urlencode(params)
+                request = urllib.request.Request(
+                    f"https://{host}{API_PATH}?{query}",
+                    headers={
+                        **HEADERS,
+                        "User-Agent": "Mozilla/5.0",
+                    },
+                )
+                with urllib.request.urlopen(request, timeout=self.timeout) as response:
+                    payload = json.loads(response.read().decode("utf-8"))
+                if not isinstance(payload, dict):
+                    raise EastMoneyError("EastMoney response is not an object")
+                return payload
+            except Exception as exc:  # noqa: BLE001 - provider fallback boundary
+                last_error = exc
         raise EastMoneyError("EastMoney request failed") from last_error
 
     def get_catalog(self) -> list[dict[str, Any]]:
