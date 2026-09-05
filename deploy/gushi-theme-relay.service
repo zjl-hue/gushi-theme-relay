@@ -1,0 +1,16 @@
+[Unit]
+Description=Gushi GitHub theme snapshot relay import
+Wants=network-online.target
+After=network-online.target gushi-engine.service
+
+[Service]
+Type=oneshot
+User=admin
+WorkingDirectory=/srv/ooioo.work/recovered/tools
+Environment=PYTHONUNBUFFERED=1
+EnvironmentFile=-/etc/gushi/theme-relay.env
+ExecStart=/home/admin/.venvs/gushi-themes/bin/python import_theme_snapshot.py
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

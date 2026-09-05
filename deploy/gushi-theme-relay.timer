@@ -1,0 +1,11 @@
+[Unit]
+Description=Import the GitHub theme snapshot after the market close
+
+[Timer]
+OnCalendar=Mon..Fri 17:10:00 Asia/Shanghai
+Persistent=true
+RandomizedDelaySec=60
+Unit=gushi-theme-relay.service
+
+[Install]
+WantedBy=timers.target
