@@ -10,9 +10,9 @@ permissions:
 
 jobs:
   publish:
-    # EastMoney rejects the Ubuntu-hosted runner's egress path in some
-    # regions; the Windows runner uses a different public egress route.
-    runs-on: windows-latest
+    # The data-center F10 endpoint is reachable from the standard runner and
+    # does not depend on the blocked push2 quote front doors.
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - name: Check out repository
@@ -23,17 +23,15 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install fetch dependency
-        run: python -m pip install --disable-pip-version-check -q curl_cffi tzdata
-
       - name: Fetch and validate snapshot
         env:
           TZ: Asia/Shanghai
         run: |
-          trade_date="$(python -c "from datetime import datetime; from zoneinfo import ZoneInfo; print(datetime.now(ZoneInfo('Asia/Shanghai')).date())")"
+          trade_date="$(python -c "from datetime import datetime, timedelta; from zoneinfo import ZoneInfo; d=datetime.now(ZoneInfo('Asia/Shanghai')).date(); d=d-timedelta(days=1) if d.weekday()==5 else d-timedelta(days=2) if d.weekday()==6 else d; print(d)")"
           python tools/export_theme_snapshot.py \
             --output public-data/themes/latest.json \
-            --trade-date "$trade_date"
+            --trade-date "$trade_date" \
+            --provider datacenter
         shell: bash
 
       - name: Commit changed snapshot

@@ -9,9 +9,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 try:
+    from .datacenter_themes import DataCenterClient, build_batches
     from .eastmoney_themes import EastMoneyClient, collect_batches
     from .theme_snapshot import build_snapshot, validate_snapshot
 except ImportError:  # pragma: no cover - direct script execution
+    from datacenter_themes import DataCenterClient, build_batches
     from eastmoney_themes import EastMoneyClient, collect_batches
     from theme_snapshot import build_snapshot, validate_snapshot
 
@@ -46,6 +48,12 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", required=True)
     parser.add_argument("--trade-date", default=None)
+    parser.add_argument(
+        "--provider",
+        choices=("datacenter", "push2"),
+        default="datacenter",
+        help="theme relation provider (datacenter is the resilient default)",
+    )
     parser.add_argument("--timeout", type=float, default=20)
     parser.add_argument("--hot-limit", type=int, default=50)
     parser.add_argument("--max-errors", type=int, default=30)
@@ -54,14 +62,22 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     trade_date = args.trade_date or _default_trade_date()
-    client = EastMoneyClient(timeout=args.timeout)
-    batches = collect_batches(
-        client,
-        trade_date,
-        hot_limit=args.hot_limit,
-        max_errors=args.max_errors,
-    )
-    payload = build_snapshot(trade_date, batches)
+    if args.provider == "datacenter":
+        client = DataCenterClient(timeout=args.timeout)
+        batches = build_batches(
+            client.get_rows(), trade_date, hot_limit=args.hot_limit
+        )
+        source = "eastmoney_datacenter"
+    else:
+        client = EastMoneyClient(timeout=args.timeout)
+        batches = collect_batches(
+            client,
+            trade_date,
+            hot_limit=args.hot_limit,
+            max_errors=args.max_errors,
+        )
+        source = "eastmoney_push2"
+    payload = build_snapshot(trade_date, batches, source=source)
     validate_snapshot(
         payload,
         expected_trade_date=trade_date,
